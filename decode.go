@@ -235,6 +235,39 @@ func (d *Decoder) decodeInto(val reflect.Value) (err error) {
 	return
 }
 
+func (d *Decoder) decodeDictKey(v reflect.Value) error {
+	ch, err := d.peekByte()
+	if err != nil {
+		return err
+	}
+
+	if ch == byte('i') {
+		n := int64(0)
+		err := d.decodeInt(reflect.ValueOf(&n).Elem())
+		if err != nil || d.raw {
+			return err
+		}
+		str := strconv.FormatInt(n, 10)
+
+		switch v.Kind() {
+		default:
+			return fmt.Errorf("cannot store string into %s", v.Type())
+		case reflect.Slice:
+			if v.Type() != reflectByteSliceType {
+				return fmt.Errorf("cannot store string into %s", v.Type())
+			}
+			v.SetBytes([]byte(str))
+		case reflect.String:
+			v.SetString(str)
+		case reflect.Interface:
+			v.Set(reflect.ValueOf(str))
+		}
+		return nil
+	}
+
+	return d.decodeString(v)
+}
+
 func (d *Decoder) decodeInt(v reflect.Value) error {
 	//we need to read an i, some digits, and an e.
 	ch, err := d.readByte()
@@ -438,7 +471,7 @@ func (d *Decoder) decodeDict(v reflect.Value) error {
 				return err
 			}
 
-			err = d.decodeString(v)
+			err = d.decodeDictKey(v)
 			if err != nil {
 				return err
 			}
@@ -496,7 +529,7 @@ func (d *Decoder) decodeDict(v reflect.Value) error {
 
 		// peek the next value we're suppsed to read
 		var key string
-		if err := d.decodeString(reflect.ValueOf(&key).Elem()); err != nil {
+		if err := d.decodeDictKey(reflect.ValueOf(&key).Elem()); err != nil {
 			return err
 		}
 

@@ -125,6 +125,12 @@ func TestDecode(t *testing.T) {
 		}, false, false},
 		{`de`, new(map[string]string), map[string]string{}, false, false},
 
+		// dict with int keys
+		{`di0e3:bari1e3:fooe`, new(map[string]string), map[string]string{
+			"0": "bar",
+			"1": "foo",
+		}, false, false},
+
 		//into interfaces
 		{`i5e`, new(interface{}), int64(5), false, false},
 		{`li5ee`, new(interface{}), []interface{}{int64(5)}, false, false},
@@ -201,7 +207,7 @@ func TestDecode(t *testing.T) {
 		//malformed
 		{`i53:foo`, new(interface{}), nil, true, false},
 		{`6:foo`, new(interface{}), nil, true, false},
-		{`di5ei2ee`, new(interface{}), nil, true, false},
+		//{`di5ei2ee`, new(interface{}), nil, true, false}, // now that we support int keys, this passes
 		{`d3:fooe`, new(interface{}), nil, true, false},
 		{`l3:foo3:bar`, new(interface{}), nil, true, false},
 		{`d-1:`, new(interface{}), nil, true, false},
@@ -275,6 +281,7 @@ func TestRawDecode(t *testing.T) {
 		{`llleee`, []byte(`llleee`), false},
 		{`li5eli5eli5eeee`, []byte(`li5eli5eli5eeee`), false},
 		{`d5:helloi5ee`, []byte(`d5:helloi5ee`), false},
+		{`di0e4:arsti1e3:abce`, []byte(`di0e4:arsti1e3:abce`), false},
 	}
 
 	for i, tt := range rawDecodeCases {
